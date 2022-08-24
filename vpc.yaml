@@ -1,4 +1,17 @@
-apiVersion: ec2.aws.jet.crossplane.io/v1alpha2
+# apiVersion: ec2.aws.jet.crossplane.io/v1alpha2
+# kind: VPC
+# metadata:
+#   name: sample-vpc
+# spec:
+#   forProvider:
+#     region: us-east-1
+#     cidrBlock: 10.0.0.0/16
+#     tags:
+#       Name: James
+#   providerConfigRef:
+#     name: aws-enbuild-dev
+---
+apiVersion: ec2.aws.crossplane.io/v1beta1
 kind: VPC
 metadata:
   name: sample-vpc
@@ -6,7 +19,11 @@ spec:
   forProvider:
     region: us-east-1
     cidrBlock: 10.0.0.0/16
+    enableDnsSupport: true
+    enableDnsHostNames: true
+    instanceTenancy: default
     tags:
-      Name: James
+      - key: Name
+        value: James
   providerConfigRef:
     name: aws-enbuild-dev

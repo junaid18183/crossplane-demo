@@ -6,23 +6,40 @@ helm upgrade --install     crossplane crossplane-stable/crossplane     --namespa
 ```
 
 ## Install AWS Provider
-```
-k apply -f provider-jet-aws.yaml
+We will install both [AWS](https://github.com/crossplane-contrib/provider-aws) and [AWS Jet](https://github.com/crossplane-contrib/provider-jet-aws) provider 
 
-k get providers
+```
+❯ k apply -f provider-aws.yaml
+provider.pkg.crossplane.io/provider-aws created
+provider.pkg.crossplane.io/provider-jet-aws created
+
+❯ k get providers
 NAME               INSTALLED   HEALTHY   PACKAGE                              AGE
-provider-jet-aws   True        True      crossplane/provider-jet-aws:v0.5.0   4m25s
+provider-aws       True        Unknown   crossplane/provider-aws:v0.30.1      13s
+provider-jet-aws   True        Unknown   crossplane/provider-jet-aws:v0.5.0   13s
 ```
 
 It will take some time for provider to be healthy, as it will download and install the provider.
 You can confirm that the aws provider pod is running in crossplane-system namespace.
+
 ```
-k get po -n crossplane-system
+❯ k get po -n crossplane-system
 NAME                                           READY   STATUS    RESTARTS   AGE
-crossplane-rbac-manager-8466dfb7fc-wskhq       1/1     Running   0          54m
-crossplane-7c88c45998-jd2s2                    1/1     Running   0          54m
-provider-jet-aws-599c4ea494ca-7d8d575c-fl2g4   1/1     Running   0          5m27s
+crossplane-rbac-manager-8466dfb7fc-h4g7t       1/1     Running   0          7m15s
+crossplane-7c88c45998-xfx82                    1/1     Running   0          7m15s
+provider-jet-aws-599c4ea494ca-7d8d575c-n8jq4   1/1     Running   0          3m33s
+provider-aws-f72884c6b119-5bf5454658-jd9wb     1/1     Running   0          3m17s
 ```
+
+Since we installed both the providers there will be some overlapping CRD's and resources e.g. VPC 
+```
+❯ k api-resources | grep -w vpcs
+vpcs                                                  ec2.aws.crossplane.io/v1beta1                        false        VPC
+vpcs                                                  ec2.aws.jet.crossplane.io/v1alpha2                   false        VPC
+
+```
+
+In that case the v1bet1 takes precedence. 
 
 ## Create the ProviderConfig 
 Before creating the ProviderConfig, we need to create a kubernetes secret in crossplane-system with our AWS account credentails.
@@ -38,16 +55,19 @@ region = us-east-1
 
 And then create a secret
 ```
-kubectl create secret generic aws-enbuild-dev -n crossplane-system --from-file=creds=/Users/junedm/.aws/enbuild_dev.conf
+❯ kubectl create secret generic aws-enbuild-dev -n crossplane-system --from-file=creds=/Users/junedm/.aws/enbuild_dev.conf
+secret/aws-enbuild-dev created
 ```
 
-Now, you can create the providerconfig
+Now, you can create the providerconfig, we will create the provider config with both the providers, but as discussed the v1beta1 will take precedence.
 ```
-k apply -f provider-config.yaml
+❯ k apply -f provider-config.yaml
+providerconfig.aws.jet.crossplane.io/aws-enbuild-dev created
+providerconfig.aws.crossplane.io/aws-enbuild-dev created
 
-k get providerconfig
+❯ k get providerconfig
 NAME              AGE
-aws-enbuild-dev   17s
+aws-enbuild-dev   65s
 ```
 
 # Create the AWS Resources
